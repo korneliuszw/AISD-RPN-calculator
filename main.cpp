@@ -391,7 +391,7 @@ private:
             auto opValue = op.getValue();
             int priority = getTokenPriority(opValue->token);
             // negate is a special case i guess?
-            if (priority < minPriority) {
+            if (priority < minPriority || (priority == minPriority && priority == getTokenPriority(NEGATE))) {
                 operatorStack.push(*opValue);
                 break;
             }

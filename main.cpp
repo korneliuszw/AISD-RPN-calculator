@@ -34,6 +34,7 @@ struct ListNode {
     Value value;
 
     explicit ListNode<Value>(Value value) : value(value) {}
+    explicit ListNode<Value>(Value &&value) : value(value) {}
 
     ~ListNode() = default;
 };
@@ -244,28 +245,30 @@ public:
 
 struct TokenValue {
     Token token;
-    void *value = nullptr;
+    union {
+        Function *function = nullptr;
+        int numericValue;
+    };
     size_t *ownerCounter = new size_t(1);
 
     ~TokenValue() {
-        if (token == VALUE)
-            delete (char *) value;
-        else if (token == FUNCTION && *ownerCounter == 1)
-            delete (Function *) value;
         *ownerCounter -= 1;
-        if (*ownerCounter == 0) delete ownerCounter;
+        if (token == FUNCTION && *ownerCounter == 0 && function)
+            delete function;
+        if (*ownerCounter == 0)
+            delete ownerCounter;
     }
 
-    TokenValue(Token token) : token{token} {};
+    explicit TokenValue(Token token) : token(token) {};
 
-    TokenValue(Token token, void *value) : token{token}, value{value} {};
+    explicit TokenValue(Token token, Function* function) : token(token), function(function) {};
+    explicit TokenValue(Token token, int value) : token(token), numericValue(value) {};
 
     TokenValue(const TokenValue &t) {
         if (t.token == VALUE) {
-            value = malloc(strlen((char*) t.value) + 1);
-            strcpy((char*) value, (char*) t.value);
+            numericValue = t.numericValue;
         } else if (t.token == FUNCTION) {
-            value = t.value;
+            function = t.function;
         }
         delete ownerCounter;
         ownerCounter = t.ownerCounter;
@@ -284,48 +287,40 @@ private:
 
     void flushBuffer() {
         if (tokenBuffer != nullptr) {
-            tokens.AddLast({Token::VALUE, tokenBuffer});
+            TokenValue val(Token::VALUE, atoi(tokenBuffer));
+            tokens.AddLast(std::move(val));
+            free(tokenBuffer);
             tokenBuffer = nullptr;
         }
+    }
+
+    bool addTokenAndFlush(Token token) {
+        flushBuffer();
+        TokenValue val(token);
+        tokens.AddLast(std::move(val));
+        return true;
     }
 
     bool readNextCharacter() {
         char c = cin.get();
         // end of formula
         if (c == '.') {
-            // flush remaining buffer
-            if (tokenBuffer != nullptr) {
-                tokens.AddLast({Token::VALUE, tokenBuffer});
-                tokenBuffer = nullptr;
-            }
+            flushBuffer();
             return false;
         }
         switch (c) {
-            case ',': {
-                flushBuffer();
-                tokens.AddLast({Token::ARGUMENT_SEP});
-                return true;
-            }
-            case '+': {
-                flushBuffer();
-                tokens.AddLast({Token::ADD});
-                return true;
-            }
-            case '-': {
-                flushBuffer();
-                tokens.AddLast({Token::SUBSTRACT});
-                return true;
-            }
-            case '/': {
-                flushBuffer();
-                tokens.AddLast({Token::DIVIDE});
-                return true;
-            }
-            case '*': {
-                flushBuffer();
-                tokens.AddLast({Token::MULTIPLY});
-                return true;
-            }
+            case ',':
+                return addTokenAndFlush(Token::ARGUMENT_SEP);
+            case '+':
+                return addTokenAndFlush(Token::ADD);
+            case '-':
+                return addTokenAndFlush(Token::SUBSTRACT);
+            case '/':
+                return addTokenAndFlush(Token::DIVIDE);
+            case '*':
+                return addTokenAndFlush(Token::MULTIPLY);
+            case ')':
+                return addTokenAndFlush(Token::PARENTHESSIS_END);
             case '(': {
                 if (tokenBuffer && strlen(tokenBuffer) > 0) {
                     Function *function = nullptr;
@@ -338,32 +333,30 @@ private:
                     else
                         flushBuffer();
                     if (function) {
-                        tokens.AddLast({Token::FUNCTION, function});
-                        delete tokenBuffer;
+                        tokens.AddLast(TokenValue(Token::FUNCTION, function));
+                        free(tokenBuffer);
                         tokenBuffer = nullptr;
                     }
                 }
-                tokens.AddLast({Token::PARENTHESSIS_START});
+                tokens.AddLast(TokenValue(Token::PARENTHESSIS_START));
                 return true;
             }
-            case ')': {
-                flushBuffer();
-                tokens.AddLast({Token::PARENTHESSIS_END});
-                return true;
-            }
+
         }
         // we only care about numbers and alphabet at this point so we skip rest
         if (!(c >= '0' && c <= '9') && !(c >= 'a' && c <= 'z') &&
             !(c >= 'A' && c <= 'Z'))
             return true;
         // add character to buffer
-        if (tokenBuffer == nullptr) {
+        if (!tokenBuffer) {
             tokenBufferSize = 0;
-            tokenBuffer = new char[255];
+            tokenBuffer = (char*) malloc(14);
         }
         if (c == 'N' && tokenBufferSize == 0) {
-            tokens.AddLast({Token::NEGATE});
-            delete tokenBuffer;
+            tokens.AddLast(TokenValue(Token::NEGATE));
+            // we only discard the buffer here, because it's not passed to tokens!
+            if (tokenBuffer)
+                free(tokenBuffer);
             tokenBuffer = nullptr;
         }
         else {
@@ -416,7 +409,7 @@ public:
             } else if (token->value.token == PARENTHESSIS_START) {
                 token = parse(token->next, true, functionCallPointer != nullptr, &functionArgs);
                 if (functionCallPointer) {
-                    ((Function*) functionCallPointer->value)->SetArgumentCount(functionArgs);
+                    functionCallPointer->function->SetArgumentCount(functionArgs);
                     converted.AddLast(*functionCallPointer);
                     delete functionCallPointer;
                 }
@@ -444,8 +437,8 @@ public:
         auto node = converted.GetFirst();
         while (node) {
             if (node != converted.GetFirst()) printf(" ");
-            if (node->value.token == VALUE) printf("%s",(char*) node->value.value);
-            else if (node->value.token == FUNCTION) ((Function*) node->value.value)->print();
+            if (node->value.token == VALUE) printf("%d",node->value.numericValue);
+            else if (node->value.token == FUNCTION) node->value.function->print();
             else printf("%c", stringifyToken(node->value.token));
             printf(" ");
             node = node->next;
@@ -457,7 +450,7 @@ class ONPEvaluator {
 public:
     static void printStack(const TokenValue& token, const Stack<int>& stack) {
         if (token.token == FUNCTION) {
-            ((Function*) token.value)->print();
+            token.function->print();
         } else {
             printf("%c", stringifyToken(token.token));
         }
@@ -473,7 +466,7 @@ public:
         auto token = onpList.GetFirst();
         while (token) {
             if (token->value.token == VALUE) {
-                operandStack.push(atoi((char*) token->value.value));
+                operandStack.push(token->value.numericValue);
                 token = token->next;
                 continue;
             }
@@ -508,7 +501,7 @@ public:
                     break;
                 }
                 case FUNCTION: {
-                    result += ((Function*) token->value.value)->Calculate(operandStack);
+                    result += token->value.function->Calculate(operandStack);
                     break;
                 }
                 default: {
@@ -534,8 +527,10 @@ int main() {
         parser.print();
         printf("\n");
         auto result = ONPEvaluator::Evaluate(parser.GetConvertedTokenList());
-        if (result)
+        if (result) {
             printf("%d\n", *result);
+            delete result;
+        }
         else printf("ERROR\n");
     }
 }

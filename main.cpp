@@ -184,14 +184,7 @@ public:
         return argumentCount;
     }
     virtual const char *Name() = 0;
-
-    virtual ~Function() = default;
-
-    Function() = default;
-
-    Function(const Function &function) = default;
-
-    Function &operator=(const Function &r) { return *this; }
+    virtual Function* clone() const = 0;
     virtual void print() {
         printf("%s%d", this->Name(), this->argumentCount);
     }
@@ -211,6 +204,11 @@ public:
     }
 
     const char *Name() override { return "MAX"; }
+    Function* clone() const override {
+        auto clone = new MaxFunction();
+        clone->SetArgumentCount(argumentCount);
+        return clone;
+    }
 };
 
 class MinFunction : public Function {
@@ -227,6 +225,11 @@ public:
     }
 
     const char *Name() override { return "MIN"; }
+    Function* clone() const override {
+        auto clone = new MinFunction();
+        clone->SetArgumentCount(argumentCount);
+        return clone;
+    }
 };
 
 class IfFunction : public Function {
@@ -241,6 +244,11 @@ public:
     void print() override {
         printf("%s", this->Name());
     }
+    Function* clone() const override {
+        auto clone = new IfFunction();
+        clone->SetArgumentCount(argumentCount);
+        return clone;
+    }
 };
 
 struct TokenValue {
@@ -249,14 +257,10 @@ struct TokenValue {
         Function *function = nullptr;
         int numericValue;
     };
-    size_t *ownerCounter = new size_t(1);
 
     ~TokenValue() {
-        *ownerCounter -= 1;
-        if (token == FUNCTION && *ownerCounter == 0 && function)
+        if (token == FUNCTION && function)
             delete function;
-        if (*ownerCounter == 0)
-            delete ownerCounter;
     }
 
     explicit TokenValue(Token token) : token(token) {};
@@ -268,11 +272,8 @@ struct TokenValue {
         if (t.token == VALUE) {
             numericValue = t.numericValue;
         } else if (t.token == FUNCTION) {
-            function = t.function;
+            function = t.function->clone();
         }
-        delete ownerCounter;
-        ownerCounter = t.ownerCounter;
-        *ownerCounter += 1;
         token = t.token;
     }
 

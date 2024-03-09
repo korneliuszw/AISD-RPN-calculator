@@ -1,7 +1,6 @@
 #include <cassert>
 #include <cstring>
 #include <iostream>
-#include <ostream>
 #include <cstdlib>
 
 using namespace std;
@@ -263,8 +262,8 @@ struct TokenValue {
 
     TokenValue(const TokenValue &t) {
         if (t.token == VALUE) {
-            value = malloc(strlen((char *) t.value));
-            strcpy((char *) value, (char *) t.value);
+            value = malloc(strlen((char*) t.value) + 1);
+            strcpy((char*) value, (char*) t.value);
         } else if (t.token == FUNCTION) {
             value = t.value;
         }
@@ -275,48 +274,6 @@ struct TokenValue {
     }
 
     TokenValue &operator=(const TokenValue &r) { return *this; }
-
-    friend ostream &operator<<(ostream &out, const TokenValue &token) {
-        switch (token.token) {
-            case MULTIPLY: {
-                out << "MULTIPLY";
-                break;
-            }
-            case PARENTHESSIS_END:
-            case PARENTHESSIS_START: {
-                out << "PAREN";
-                break;
-            }
-            case DIVIDE: {
-                out << "DIVIDE";
-                break;
-            }
-            case ADD: {
-                out << "ADD";
-                break;
-            }
-            case SUBSTRACT: {
-                out << "SUBSTRACT";
-                break;
-            }
-            case FUNCTION: {
-                out << "FUNCTION " << reinterpret_cast<Function *>(token.value)->Name();
-                break;
-            }
-            case VALUE: {
-                out << "VALUE: " << reinterpret_cast<char *>(token.value);
-                break;
-            }
-            case NEGATE: {
-                out << "NEGATE";
-                break;
-            }
-            case ARGUMENT_SEP:
-                out << "Argument seperator";
-                break;
-        }
-        return out;
-    }
 };
 
 class Tokenizer {
@@ -404,10 +361,15 @@ private:
             tokenBufferSize = 0;
             tokenBuffer = new char[255];
         }
-        if (c == 'N' && tokenBufferSize == 0)
+        if (c == 'N' && tokenBufferSize == 0) {
             tokens.AddLast({Token::NEGATE});
-        else
+            delete tokenBuffer;
+            tokenBuffer = nullptr;
+        }
+        else {
             tokenBuffer[tokenBufferSize++] = c;
+            tokenBuffer[tokenBufferSize] = '\0';
+        }
         return true;
     }
 
@@ -428,7 +390,8 @@ private:
         while (op.HasValue()) {
             auto opValue = op.getValue();
             int priority = getTokenPriority(opValue->token);
-            if (priority <= minPriority) {
+            // negate is a special case i guess?
+            if (priority < minPriority) {
                 operatorStack.push(*opValue);
                 break;
             }
@@ -464,6 +427,7 @@ public:
                 if (context)
                     return token;
             } else if (token->value.token == ARGUMENT_SEP && isInsideFunction && functionArgsCounter) {
+                pullOperator(operatorStack);
                 *functionArgsCounter += 1;
             } else {
                 int priority = getTokenPriority(token->value.token);
@@ -505,7 +469,7 @@ public:
         cout << "\n";
 
     }
-    static int Evaluate(const List<TokenValue>& onpList) {
+    static int* Evaluate(const List<TokenValue>& onpList) {
         Stack<int> operandStack;
         auto token = onpList.GetFirst();
         while (token) {
@@ -528,6 +492,9 @@ public:
                 }
                 case DIVIDE: {
                     int b = *operandStack.pop().getValue(), a= *operandStack.pop().getValue();
+                    if (b == 0) {
+                        return nullptr;
+                    }
                     result += a / b;
                     break;
                 }
@@ -553,7 +520,7 @@ public:
             token = token->next;
         }
         auto top = operandStack.pop();
-        return top.HasValue() ? *top.getValue() : 0;
+        return top.HasValue() ? new int(*top.getValue()) : nullptr;
     }
 };
 
@@ -567,6 +534,9 @@ int main() {
         parser.parse(tokens.GetFirst(), false);
         parser.print();
         cout << "\n";
-        cout << ONPEvaluator::Evaluate(parser.GetConvertedTokenList()) << "\n";
+        auto result = ONPEvaluator::Evaluate(parser.GetConvertedTokenList());
+        if (result)
+            cout << *result << "\n";
+        else cout << "ERROR\n";
     }
 }

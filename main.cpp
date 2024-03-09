@@ -192,7 +192,7 @@ public:
 
     Function &operator=(const Function &r) { return *this; }
     virtual void print() {
-        cout << this->Name() << this->argumentCount;
+        printf("%s%d", this->Name(), this->argumentCount);
     }
 };
 
@@ -238,7 +238,7 @@ public:
 
     const char *Name() override { return "IF"; }
     void print() override {
-        cout << this->Name();
+        printf("%s", this->Name());
     }
 };
 
@@ -443,11 +443,11 @@ public:
     void print() {
         auto node = converted.GetFirst();
         while (node) {
-            if (node != converted.GetFirst()) cout << " ";
-            if (node->value.token == VALUE) cout << (char*) node->value.value;
+            if (node != converted.GetFirst()) printf(" ");
+            if (node->value.token == VALUE) printf("%s",(char*) node->value.value);
             else if (node->value.token == FUNCTION) ((Function*) node->value.value)->print();
-            else cout << stringifyToken(node->value.token);
-            cout << " ";
+            else printf("%c", stringifyToken(node->value.token));
+            printf(" ");
             node = node->next;
         }
     }
@@ -459,15 +459,14 @@ public:
         if (token.token == FUNCTION) {
             ((Function*) token.value)->print();
         } else {
-            cout << stringifyToken(token.token);
+            printf("%c", stringifyToken(token.token));
         }
         auto node = stack.peek();
         while (node) {
-            cout << " " << node->value;
+            printf(" %d", node->value);
             node = node->next;
         }
-        cout << "\n";
-
+        printf("\n");
     }
     static int* Evaluate(const List<TokenValue>& onpList) {
         Stack<int> operandStack;
@@ -533,10 +532,10 @@ int main() {
         ONPParser parser;
         parser.parse(tokens.GetFirst(), false);
         parser.print();
-        cout << "\n";
+        printf("\n");
         auto result = ONPEvaluator::Evaluate(parser.GetConvertedTokenList());
         if (result)
-            cout << *result << "\n";
-        else cout << "ERROR\n";
+            printf("%d\n", *result);
+        else printf("ERROR\n");
     }
 }

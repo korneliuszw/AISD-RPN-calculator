@@ -5,6 +5,8 @@
 #ifndef KALKULATOR_FUNCTIONS_HPP
 #define KALKULATOR_FUNCTIONS_HPP
 
+#include <cstdio>
+
 #include "stack.hpp"
 
 class Function {

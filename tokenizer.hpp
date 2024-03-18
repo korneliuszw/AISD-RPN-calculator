@@ -6,13 +6,15 @@
 #define KALKULATOR_TOKENIZER_HPP
 
 #include "list.hpp"
+#include "onp.hpp"
 #include "tokens.hpp"
 
-class Tokenizer {
+class Tokenizer
+{
 private:
-    List<TokenValue> tokens;
-    char *tokenBuffer = nullptr;
+    char* tokenBuffer = nullptr;
     size_t tokenBufferSize = 0;
+    ONPParser& parser;
 
     void flushBuffer();
 
@@ -21,9 +23,12 @@ private:
     bool readNextCharacter();
 
 public:
-    const List<TokenValue> &readTokens();
-};
+    explicit Tokenizer(ONPParser& parser): parser(parser)
+    {
+    }
 
+    void readTokens();
+};
 
 
 #endif //KALKULATOR_TOKENIZER_HPP

@@ -8,19 +8,40 @@
 #include "tokens.hpp"
 #include "list.hpp"
 
-class ONPParser {
+struct Context
+{
+    int arguments = 0;
+    bool insideFunction;
+
+    Context(bool insideFunction = false)
+    {
+        if (insideFunction) arguments = 1;
+        this->insideFunction = insideFunction;
+    }
+};
+
+class ONPParser
+{
 private:
+    Stack<Context> contextStack;
     List<TokenValue> converted;
-    void pullOperator(Stack<TokenValue> &operatorStack, int minPriority = 0);
+    Stack<TokenValue> operatorStack;
+    void pullOperator(Stack<TokenValue>& operatorStack, int minPriority = 0);
 
 public:
     const List<TokenValue>& GetConvertedTokenList() const { return converted; }
-    const ListNode<TokenValue> *parse(const ListNode<TokenValue> *token, bool context,
-                                      bool isInsideFunction = false, int *functionArgsCounter = nullptr);
+    const ListNode<TokenValue>* parse(TokenValue&& token);
+    void pullEnd();
     void print();
+
+    ONPParser()
+    {
+        contextStack.push(Context());
+    }
 };
 
-class ONPEvaluator {
+class ONPEvaluator
+{
 public:
     static void printStack(const TokenValue& token, const Stack<int>& stack);
     static int* Evaluate(const List<TokenValue>& onpList);

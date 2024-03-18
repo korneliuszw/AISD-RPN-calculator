@@ -1,16 +1,19 @@
-//
 // Created by wired-mac on 09/03/2024.
 //
 
 #include "onp.hpp"
 
-void ONPParser::pullOperator(Stack<TokenValue> &operatorStack, int minPriority) {
+void ONPParser::pullOperator(Stack<TokenValue>& operatorStack, int minPriority)
+{
     Optional<TokenValue> op = operatorStack.pop();
-    while (op.HasValue()) {
+    while (op.HasValue())
+    {
         auto opValue = op.getValue();
         int priority = getTokenPriority(opValue->token);
         // negate is a special case i guess?
-        if (priority < minPriority || (priority == minPriority && priority == getTokenPriority(NEGATE))) {
+        if (opValue->token == PARENTHESSIS_START || priority < minPriority || (priority == minPriority && priority ==
+            getTokenPriority(NEGATE)))
+        {
             operatorStack.push(*opValue);
             break;
         }
@@ -19,47 +22,72 @@ void ONPParser::pullOperator(Stack<TokenValue> &operatorStack, int minPriority) 
     }
 }
 
-const ListNode<TokenValue> *ONPParser::parse(const ListNode<TokenValue> *token, bool context,
-                                             bool isInsideFunction, int *functionArgsCounter) {
-    TokenValue *functionCallPointer = nullptr;
-    Stack<TokenValue> operatorStack;
-    int functionArgs = 0;
-    while (token != nullptr) {
-        if (token->value.token == Token::VALUE) {
-            converted.AddLast(token->value);
-        } else if (token->value.token == FUNCTION) {
-            functionCallPointer = new TokenValue(token->value);
-            functionArgs = 0;
-        } else if (token->value.token == PARENTHESSIS_START) {
-            token = parse(token->next, true, functionCallPointer != nullptr, &functionArgs);
-            if (functionCallPointer) {
-                functionCallPointer->function->SetArgumentCount(functionArgs);
-                converted.AddLast(*functionCallPointer);
-                delete functionCallPointer;
-            }
-            functionCallPointer = nullptr;
-        } else if (token->value.token == PARENTHESSIS_END) {
-            pullOperator(operatorStack);
-            if (isInsideFunction && functionArgsCounter) *functionArgsCounter += 1;
-            if (context)
-                return token;
-        } else if (token->value.token == ARGUMENT_SEP && isInsideFunction && functionArgsCounter) {
-            pullOperator(operatorStack);
-            *functionArgsCounter += 1;
-        } else {
-            int priority = getTokenPriority(token->value.token);
-            pullOperator(operatorStack, priority);
-            operatorStack.push(token->value);
-        }
-        token = token->next;
+const ListNode<TokenValue>* ONPParser::parse(TokenValue&& token)
+{
+    const auto ctx = contextStack.peek();
+    if (token.token == Token::VALUE)
+    {
+        converted.AddLast(token);
     }
-    pullOperator(operatorStack);
+    else if (token.token == FUNCTION)
+    {
+        operatorStack.push(token);
+    }
+    else if (token.token == PARENTHESSIS_START)
+    {
+        if (operatorStack.getLength() > 0 && operatorStack.peek()->value.token == FUNCTION)
+        {
+            contextStack.push(Context(true));
+        }
+        else
+        {
+            contextStack.push(Context());
+        }
+        operatorStack.push(token);
+    }
+    else if (token.token == PARENTHESSIS_END)
+    {
+        pullOperator(operatorStack);
+        operatorStack.pop();
+        if (contextStack.getLength() > 1)
+        {
+            const auto oldContext = contextStack.pop();
+            if (oldContext.HasValue() && oldContext.getValue()->insideFunction)
+            {
+                const auto val = oldContext.getValue();
+                if (val->insideFunction)
+                {
+                    const auto funcToken = operatorStack.pop().getValue();
+                    funcToken->function->SetArgumentCount(val->arguments);
+                    converted.AddLast(TokenValue(funcToken->token, funcToken->function));
+                }
+            }
+        }
+    }
+    else if (token.token == ARGUMENT_SEP && ctx->value.insideFunction)
+    {
+        ctx->value.arguments += 1;
+        pullOperator(operatorStack);
+    }
+    else
+    {
+        int priority = getTokenPriority(token.token);
+        pullOperator(operatorStack, priority);
+        operatorStack.push(token);
+    }
     return nullptr;
 }
 
-void ONPParser::print() {
+void ONPParser::pullEnd()
+{
+    pullOperator(operatorStack);
+}
+
+void ONPParser::print()
+{
     auto node = converted.GetFirst();
-    while (node) {
+    while (node)
+    {
         if (node != converted.GetFirst()) printf(" ");
         if (node->value.token == VALUE) printf("%d", node->value.numericValue);
         else if (node->value.token == FUNCTION) node->value.function->print();
@@ -69,64 +97,81 @@ void ONPParser::print() {
     }
 }
 
-void ONPEvaluator::printStack(const TokenValue &token, const Stack<int> &stack) {
-    if (token.token == FUNCTION) {
+void ONPEvaluator::printStack(const TokenValue& token, const Stack<int>& stack)
+{
+    if (token.token == FUNCTION)
+    {
         token.function->print();
-    } else {
+    }
+    else
+    {
         printf("%c", stringifyToken(token.token));
     }
     auto node = stack.peek();
-    while (node) {
+    while (node)
+    {
         printf(" %d", node->value);
         node = node->next;
     }
     printf("\n");
 }
 
-int *ONPEvaluator::Evaluate(const List<TokenValue> &onpList) {
+int* ONPEvaluator::Evaluate(const List<TokenValue>& onpList)
+{
     Stack<int> operandStack;
     auto token = onpList.GetFirst();
-    while (token) {
-        if (token->value.token == VALUE) {
+    while (token)
+    {
+        if (token->value.token == VALUE)
+        {
             operandStack.push(token->value.numericValue);
             token = token->next;
             continue;
         }
         int result = 0;
         printStack(token->value, operandStack);
-        switch (token->value.token) {
-            case NEGATE: {
+        switch (token->value.token)
+        {
+        case NEGATE:
+            {
                 result -= *operandStack.pop().getValue();
                 break;
             }
-            case MULTIPLY: {
+        case MULTIPLY:
+            {
                 int b = *operandStack.pop().getValue(), a = *operandStack.pop().getValue();
                 result += a * b;
                 break;
             }
-            case DIVIDE: {
+        case DIVIDE:
+            {
                 int b = *operandStack.pop().getValue(), a = *operandStack.pop().getValue();
-                if (b == 0) {
+                if (b == 0)
+                {
                     return nullptr;
                 }
                 result += a / b;
                 break;
             }
-            case ADD: {
+        case ADD:
+            {
                 int b = *operandStack.pop().getValue(), a = *operandStack.pop().getValue();
                 result += a + b;
                 break;
             }
-            case SUBSTRACT: {
+        case SUBSTRACT:
+            {
                 int b = *operandStack.pop().getValue(), a = *operandStack.pop().getValue();
                 result += a - b;
                 break;
             }
-            case FUNCTION: {
+        case FUNCTION:
+            {
                 result += token->value.function->Calculate(operandStack);
                 break;
             }
-            default: {
+        default:
+            {
                 break;
             }
         }

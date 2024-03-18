@@ -6,20 +6,20 @@
 using namespace std;
 
 
-
-
-int main() {
+int main()
+{
     int N;
     cin >> N;
-    for (int i = 0; i < N; i++) {
-        Tokenizer tokenizer;
-        auto &tokens = tokenizer.readTokens();
+    for (int i = 0; i < N; i++)
+    {
         ONPParser parser;
-        parser.parse(tokens.GetFirst(), false);
+        Tokenizer tokenizer(parser);
+        tokenizer.readTokens();
         parser.print();
         printf("\n");
         auto result = ONPEvaluator::Evaluate(parser.GetConvertedTokenList());
-        if (result) {
+        if (result)
+        {
             printf("%d\n", *result);
             delete result;
         }

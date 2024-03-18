@@ -18,7 +18,7 @@ public:
     Optional<Value> pop() { return list.PopFirst(); }
 
     void push(Value val) { return list.AddFirst(val); }
-    const ListNode<Value>* peek() const { return list.GetFirst();}
+    ListNode<Value>* peek() const { return list.GetFirst();}
 };
 
 #endif //KALKULATOR_STACK_HPP

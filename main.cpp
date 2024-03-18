@@ -14,8 +14,8 @@ int main()
     {
         ONPParser parser;
         Tokenizer tokenizer(parser);
-        tokenizer.readTokens();
-        parser.print();
+        tokenizer.ReadTokens();
+        parser.Print();
         printf("\n");
         auto result = ONPEvaluator::Evaluate(parser.GetConvertedTokenList());
         if (result)

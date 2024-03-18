@@ -8,47 +8,47 @@
 
 using namespace std;
 
-void Tokenizer::flushBuffer()
+void Tokenizer::FlushBuffer()
 {
     if (tokenBuffer != nullptr)
     {
-        parser.parse(TokenValue(Token::VALUE, atoi(tokenBuffer)));
+        parser.Parse(TokenValue(Token::VALUE, atoi(tokenBuffer)));
         free(tokenBuffer);
         tokenBuffer = nullptr;
     }
 }
 
-bool Tokenizer::addTokenAndFlush(Token token)
+bool Tokenizer::AddTokenAndFlush(Token token)
 {
-    flushBuffer();
-    parser.parse(TokenValue(token));
+    FlushBuffer();
+    parser.Parse(TokenValue(token));
     return true;
 }
 
-bool Tokenizer::readNextCharacter()
+bool Tokenizer::ReadNextCharacter()
 {
     char c = cin.get();
     // end of formula
     if (c == '.')
     {
-        flushBuffer();
+        FlushBuffer();
         parser.pullEnd();
         return false;
     }
     switch (c)
     {
     case ',':
-        return addTokenAndFlush(Token::ARGUMENT_SEP);
+        return AddTokenAndFlush(Token::ARGUMENT_SEP);
     case '+':
-        return addTokenAndFlush(Token::ADD);
+        return AddTokenAndFlush(Token::ADD);
     case '-':
-        return addTokenAndFlush(Token::SUBSTRACT);
+        return AddTokenAndFlush(Token::SUBSTRACT);
     case '/':
-        return addTokenAndFlush(Token::DIVIDE);
+        return AddTokenAndFlush(Token::DIVIDE);
     case '*':
-        return addTokenAndFlush(Token::MULTIPLY);
+        return AddTokenAndFlush(Token::MULTIPLY);
     case ')':
-        return addTokenAndFlush(Token::PARENTHESSIS_END);
+        return AddTokenAndFlush(Token::PARENTHESSIS_END);
     case '(':
         {
             if (tokenBuffer && strlen(tokenBuffer) > 0)
@@ -61,15 +61,15 @@ bool Tokenizer::readNextCharacter()
                 else if (strcmp("IF", tokenBuffer) == 0)
                     function = new IfFunction();
                 else
-                    flushBuffer();
+                    FlushBuffer();
                 if (function)
                 {
-                    parser.parse(TokenValue(Token::FUNCTION, function));
+                    parser.Parse(TokenValue(Token::FUNCTION, function));
                     free(tokenBuffer);
                     tokenBuffer = nullptr;
                 }
             }
-            parser.parse(TokenValue(Token::PARENTHESSIS_START));
+            parser.Parse(TokenValue(Token::PARENTHESSIS_START));
             return true;
         }
     }
@@ -85,7 +85,7 @@ bool Tokenizer::readNextCharacter()
     }
     if (c == 'N' && tokenBufferSize == 0)
     {
-        parser.parse(TokenValue(Token::NEGATE));
+        parser.Parse(TokenValue(Token::NEGATE));
         // we only discard the buffer here, because it's not passed to tokens!
         if (tokenBuffer)
             free(tokenBuffer);
@@ -99,7 +99,7 @@ bool Tokenizer::readNextCharacter()
     return true;
 }
 
-void Tokenizer::readTokens()
+void Tokenizer::ReadTokens()
 {
-    while (readNextCharacter());
+    while (ReadNextCharacter());
 }

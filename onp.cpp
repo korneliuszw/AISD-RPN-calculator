@@ -3,61 +3,61 @@
 
 #include "onp.hpp"
 
-void ONPParser::pullOperator(Stack<TokenValue>& operatorStack, int minPriority)
+void ONPParser::PullOperator(Stack<TokenValue>& operatorStack, int minPriority)
 {
-    Optional<TokenValue> op = operatorStack.pop();
+    Optional<TokenValue> op = operatorStack.Pop();
     while (op.HasValue())
     {
-        auto opValue = op.getValue();
+        auto opValue = op.GetValue();
         int priority = getTokenPriority(opValue->token);
         // negate is a special case i guess?
         if (opValue->token == PARENTHESSIS_START || priority < minPriority || (priority == minPriority && priority ==
             getTokenPriority(NEGATE)))
         {
-            operatorStack.push(*opValue);
+            operatorStack.Push(*opValue);
             break;
         }
         converted.AddLast(*opValue);
-        op = operatorStack.pop();
+        op = operatorStack.Pop();
     }
 }
 
-const ListNode<TokenValue>* ONPParser::parse(TokenValue&& token)
+const ListNode<TokenValue>* ONPParser::Parse(TokenValue&& token)
 {
-    const auto ctx = contextStack.peek();
+    const auto ctx = contextStack.Peek();
     if (token.token == Token::VALUE)
     {
         converted.AddLast(token);
     }
     else if (token.token == FUNCTION)
     {
-        operatorStack.push(token);
+        operatorStack.Push(token);
     }
     else if (token.token == PARENTHESSIS_START)
     {
-        if (operatorStack.getLength() > 0 && operatorStack.peek()->value.token == FUNCTION)
+        if (operatorStack.GetLength() > 0 && operatorStack.Peek()->value.token == FUNCTION)
         {
-            contextStack.push(Context(true));
+            contextStack.Push(Context(true));
         }
         else
         {
-            contextStack.push(Context());
+            contextStack.Push(Context());
         }
-        operatorStack.push(token);
+        operatorStack.Push(token);
     }
     else if (token.token == PARENTHESSIS_END)
     {
-        pullOperator(operatorStack);
-        operatorStack.pop();
-        if (contextStack.getLength() > 1)
+        PullOperator(operatorStack);
+        operatorStack.Pop();
+        if (contextStack.GetLength() > 1)
         {
-            const auto oldContext = contextStack.pop();
-            if (oldContext.HasValue() && oldContext.getValue()->insideFunction)
+            const auto oldContext = contextStack.Pop();
+            if (oldContext.HasValue() && oldContext.GetValue()->insideFunction)
             {
-                const auto val = oldContext.getValue();
+                const auto val = oldContext.GetValue();
                 if (val->insideFunction)
                 {
-                    const auto funcToken = operatorStack.pop().getValue();
+                    const auto funcToken = operatorStack.Pop().GetValue();
                     funcToken->function->SetArgumentCount(val->arguments);
                     converted.AddLast(TokenValue(funcToken->token, funcToken->function));
                 }
@@ -67,47 +67,47 @@ const ListNode<TokenValue>* ONPParser::parse(TokenValue&& token)
     else if (token.token == ARGUMENT_SEP && ctx->value.insideFunction)
     {
         ctx->value.arguments += 1;
-        pullOperator(operatorStack);
+        PullOperator(operatorStack);
     }
     else
     {
         int priority = getTokenPriority(token.token);
-        pullOperator(operatorStack, priority);
-        operatorStack.push(token);
+        PullOperator(operatorStack, priority);
+        operatorStack.Push(token);
     }
     return nullptr;
 }
 
 void ONPParser::pullEnd()
 {
-    pullOperator(operatorStack);
+    PullOperator(operatorStack);
 }
 
-void ONPParser::print()
+void ONPParser::Print()
 {
     auto node = converted.GetFirst();
     while (node)
     {
         if (node != converted.GetFirst()) printf(" ");
         if (node->value.token == VALUE) printf("%d", node->value.numericValue);
-        else if (node->value.token == FUNCTION) node->value.function->print();
+        else if (node->value.token == FUNCTION) node->value.function->Print();
         else printf("%c", stringifyToken(node->value.token));
         printf(" ");
         node = node->next;
     }
 }
 
-void ONPEvaluator::printStack(const TokenValue& token, const Stack<int>& stack)
+void ONPEvaluator::PrintStack(const TokenValue& token, const Stack<int>& stack)
 {
     if (token.token == FUNCTION)
     {
-        token.function->print();
+        token.function->Print();
     }
     else
     {
         printf("%c", stringifyToken(token.token));
     }
-    auto node = stack.peek();
+    auto node = stack.Peek();
     while (node)
     {
         printf(" %d", node->value);
@@ -124,28 +124,28 @@ int* ONPEvaluator::Evaluate(const List<TokenValue>& onpList)
     {
         if (token->value.token == VALUE)
         {
-            operandStack.push(token->value.numericValue);
+            operandStack.Push(token->value.numericValue);
             token = token->next;
             continue;
         }
         int result = 0;
-        printStack(token->value, operandStack);
+        PrintStack(token->value, operandStack);
         switch (token->value.token)
         {
         case NEGATE:
             {
-                result -= *operandStack.pop().getValue();
+                result -= *operandStack.Pop().GetValue();
                 break;
             }
         case MULTIPLY:
             {
-                int b = *operandStack.pop().getValue(), a = *operandStack.pop().getValue();
+                int b = *operandStack.Pop().GetValue(), a = *operandStack.Pop().GetValue();
                 result += a * b;
                 break;
             }
         case DIVIDE:
             {
-                int b = *operandStack.pop().getValue(), a = *operandStack.pop().getValue();
+                int b = *operandStack.Pop().GetValue(), a = *operandStack.Pop().GetValue();
                 if (b == 0)
                 {
                     return nullptr;
@@ -155,13 +155,13 @@ int* ONPEvaluator::Evaluate(const List<TokenValue>& onpList)
             }
         case ADD:
             {
-                int b = *operandStack.pop().getValue(), a = *operandStack.pop().getValue();
+                int b = *operandStack.Pop().GetValue(), a = *operandStack.Pop().GetValue();
                 result += a + b;
                 break;
             }
         case SUBSTRACT:
             {
-                int b = *operandStack.pop().getValue(), a = *operandStack.pop().getValue();
+                int b = *operandStack.Pop().GetValue(), a = *operandStack.Pop().GetValue();
                 result += a - b;
                 break;
             }
@@ -175,9 +175,9 @@ int* ONPEvaluator::Evaluate(const List<TokenValue>& onpList)
                 break;
             }
         }
-        operandStack.push(result);
+        operandStack.Push(result);
         token = token->next;
     }
-    auto top = operandStack.pop();
-    return top.HasValue() ? new int(*top.getValue()) : nullptr;
+    auto top = operandStack.Pop();
+    return top.HasValue() ? new int(*top.GetValue()) : nullptr;
 }

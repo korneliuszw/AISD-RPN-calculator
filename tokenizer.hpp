@@ -16,18 +16,18 @@ private:
     size_t tokenBufferSize = 0;
     ONPParser& parser;
 
-    void flushBuffer();
+    void FlushBuffer();
 
-    bool addTokenAndFlush(Token token);
+    bool AddTokenAndFlush(Token token);
 
-    bool readNextCharacter();
+    bool ReadNextCharacter();
 
 public:
     explicit Tokenizer(ONPParser& parser): parser(parser)
     {
     }
 
-    void readTokens();
+    void ReadTokens();
 };
 
 

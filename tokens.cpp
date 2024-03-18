@@ -46,7 +46,7 @@ TokenValue::TokenValue(const TokenValue &t) {
     if (t.token == VALUE) {
         numericValue = t.numericValue;
     } else if (t.token == FUNCTION) {
-        function = t.function->clone();
+        function = t.function->Clone();
     }
     token = t.token;
 }

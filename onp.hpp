@@ -26,24 +26,24 @@ private:
     Stack<Context> contextStack;
     List<TokenValue> converted;
     Stack<TokenValue> operatorStack;
-    void pullOperator(Stack<TokenValue>& operatorStack, int minPriority = 0);
+    void PullOperator(Stack<TokenValue>& operatorStack, int minPriority = 0);
 
 public:
     const List<TokenValue>& GetConvertedTokenList() const { return converted; }
-    const ListNode<TokenValue>* parse(TokenValue&& token);
+    const ListNode<TokenValue>* Parse(TokenValue&& token);
     void pullEnd();
-    void print();
+    void Print();
 
     ONPParser()
     {
-        contextStack.push(Context());
+        contextStack.Push(Context());
     }
 };
 
 class ONPEvaluator
 {
 public:
-    static void printStack(const TokenValue& token, const Stack<int>& stack);
+    static void PrintStack(const TokenValue& token, const Stack<int>& stack);
     static int* Evaluate(const List<TokenValue>& onpList);
 };
 

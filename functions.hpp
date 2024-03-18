@@ -9,58 +9,67 @@
 
 #include "stack.hpp"
 
-class Function {
+class Function
+{
 protected:
     int argumentCount = 0;
-public:
-    virtual int Calculate(Stack<int> &) = 0;
 
-    void SetArgumentCount(int count) {
+public:
+    virtual int Calculate(Stack<int>&) = 0;
+
+    void SetArgumentCount(int count)
+    {
         argumentCount = count;
     }
 
-    int GetArgumentCount() const {
+    int GetArgumentCount() const
+    {
         return argumentCount;
     }
 
-    virtual const char *Name() = 0;
+    virtual const char* Name() = 0;
 
-    virtual Function *clone() const = 0;
+    virtual Function* Clone() const = 0;
 
-    virtual void print() {
+    virtual void Print()
+    {
         printf("%s%d", this->Name(), this->argumentCount);
     }
 };
 
-class MaxFunction : public Function {
+class MaxFunction : public Function
+{
 public:
-    int Calculate(Stack<int> &values) override;
+    int Calculate(Stack<int>& values) override;
 
-    const char *Name() override { return "MAX"; }
+    const char* Name() override { return "MAX"; }
 
-    Function *clone() const override;
+    Function* Clone() const override;
 };
 
-class MinFunction : public Function {
+class MinFunction : public Function
+{
 public:
-    int Calculate(Stack<int> &values) override;
+    int Calculate(Stack<int>& values) override;
 
-    const char *Name() override { return "MIN"; }
+    const char* Name() override { return "MIN"; }
 
-    Function *clone() const override;
+    Function* Clone() const override;
 };
 
-class IfFunction : public Function {
+class IfFunction : public Function
+{
 public:
-    int Calculate(Stack<int> &values) override;
+    int Calculate(Stack<int>& values) override;
 
-    const char *Name() override { return "IF"; }
+    const char* Name() override { return "IF"; }
 
-    void print() override {
+    void Print() override
+    {
         printf("%s", this->Name());
     }
 
-    Function *clone() const override;
+    Function* Clone() const override;
 };
 
 

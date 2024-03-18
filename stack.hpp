@@ -7,18 +7,19 @@
 
 #include "list.hpp"
 
-template<typename Value>
-class Stack {
+template <typename Value>
+class Stack
+{
 private:
     List<Value> list;
 
 public:
-    int getLength() const { return list.getLength(); }
+    int GetLength() const { return list.GetLength(); }
 
-    Optional<Value> pop() { return list.PopFirst(); }
+    Optional<Value> Pop() { return list.PopFirst(); }
 
-    void push(Value val) { return list.AddFirst(val); }
-    ListNode<Value>* peek() const { return list.GetFirst();}
+    void Push(Value val) { return list.AddFirst(val); }
+    ListNode<Value>* Peek() const { return list.GetFirst(); }
 };
 
 #endif //KALKULATOR_STACK_HPP

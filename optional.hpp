@@ -28,7 +28,7 @@ public:
 
     bool HasValue() const { return this->hasValue; }
 
-    const Value* getValue() const
+    const Value* GetValue() const
     {
         assert(this->hasValue == true);
         return reinterpret_cast<const Value*>(container);

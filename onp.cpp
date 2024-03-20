@@ -29,13 +29,13 @@ const ListNode<TokenValue>* ONPParser::Parse(TokenValue&& token)
     {
         converted.AddLast(token);
     }
-    else if (token.token == FUNCTION)
+    else if (isFunction(token.token))
     {
         operatorStack.Push(token);
     }
     else if (token.token == PARENTHESSIS_START)
     {
-        if (operatorStack.GetLength() > 0 && operatorStack.Peek()->value.token == FUNCTION)
+        if (operatorStack.GetLength() > 0 && isFunction(operatorStack.Peek()->value.token))
         {
             contextStack.Push(Context(true));
         }
@@ -54,13 +54,8 @@ const ListNode<TokenValue>* ONPParser::Parse(TokenValue&& token)
             const auto oldContext = contextStack.Pop();
             if (oldContext.HasValue() && oldContext.GetValue()->insideFunction)
             {
-                const auto val = oldContext.GetValue();
-                if (val->insideFunction)
-                {
-                    const auto funcToken = operatorStack.Pop().GetValue();
-                    funcToken->function->SetArgumentCount(val->arguments);
-                    converted.AddLast(TokenValue(funcToken->token, funcToken->function));
-                }
+                const auto funcToken = operatorStack.Pop().GetValue();
+                converted.AddLast(TokenValue(funcToken->token, oldContext.GetValue()->arguments));
             }
         }
     }
@@ -90,7 +85,7 @@ void ONPParser::Print()
     {
         if (node != converted.GetFirst()) printf(" ");
         if (node->value.token == VALUE) printf("%d", node->value.numericValue);
-        else if (node->value.token == FUNCTION) node->value.function->Print();
+        else if (isFunction(node->value.token)) getTokenClass(node->value.token)->Print(node->value.numericValue);
         else printf("%c", stringifyToken(node->value.token));
         printf(" ");
         node = node->next;
@@ -99,10 +94,7 @@ void ONPParser::Print()
 
 void ONPEvaluator::PrintStack(const TokenValue& token, const Stack<int>& stack)
 {
-    if (token.token == FUNCTION)
-    {
-        token.function->Print();
-    }
+    if (isFunction(token.token)) getTokenClass(token.token)->Print(token.numericValue);
     else
     {
         printf("%c", stringifyToken(token.token));
@@ -165,9 +157,11 @@ int* ONPEvaluator::Evaluate(const List<TokenValue>& onpList)
                 result += a - b;
                 break;
             }
-        case FUNCTION:
+        case MAX:
+        case IF:
+        case MIN:
             {
-                result += token->value.function->Calculate(operandStack);
+                result += getTokenClass(token->value.token)->Calculate(operandStack, token->value.numericValue);
                 break;
             }
         default:

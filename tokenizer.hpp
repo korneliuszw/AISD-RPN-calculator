@@ -11,9 +11,9 @@
 
 class Tokenizer
 {
+    Token* pendingFunctionToken = nullptr;
+
 private:
-    char* tokenBuffer = nullptr;
-    size_t tokenBufferSize = 0;
     ONPParser& parser;
 
     void FlushBuffer();

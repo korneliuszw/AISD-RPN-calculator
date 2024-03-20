@@ -8,35 +8,23 @@
 
 using namespace std;
 
-void Tokenizer::FlushBuffer()
-{
-    if (tokenBuffer != nullptr)
-    {
-        parser.Parse(TokenValue(Token::VALUE, atoi(tokenBuffer)));
-        free(tokenBuffer);
-        tokenBuffer = nullptr;
-    }
-}
 
 bool Tokenizer::AddTokenAndFlush(Token token)
 {
-    FlushBuffer();
     parser.Parse(TokenValue(token));
     return true;
 }
 
 bool Tokenizer::ReadNextCharacter()
 {
-    char c = cin.get();
+    char str[12];
+    scanf("%s", str);
     // end of formula
-    if (c == '.')
+    switch (str[0])
     {
-        FlushBuffer();
+    case '.':
         parser.pullEnd();
         return false;
-    }
-    switch (c)
-    {
     case ',':
         return AddTokenAndFlush(Token::ARGUMENT_SEP);
     case '+':
@@ -49,53 +37,32 @@ bool Tokenizer::ReadNextCharacter()
         return AddTokenAndFlush(Token::MULTIPLY);
     case ')':
         return AddTokenAndFlush(Token::PARENTHESSIS_END);
+    case 'N':
+        return AddTokenAndFlush(NEGATE);
+    case 'I':
+        pendingFunctionToken = new Token(IF);
+        return true;
+    case 'M':
+        {
+            if (str[1] == 'A') pendingFunctionToken = new Token(MAX);
+            else pendingFunctionToken = new Token(MIN);
+            return true;
+        }
     case '(':
         {
-            if (tokenBuffer && strlen(tokenBuffer) > 0)
+            if (pendingFunctionToken)
             {
-                Function* function = nullptr;
-                if (strcmp("MAX", tokenBuffer) == 0)
-                    function = new MaxFunction();
-                else if (strcmp("MIN", tokenBuffer) == 0)
-                    function = new MinFunction();
-                else if (strcmp("IF", tokenBuffer) == 0)
-                    function = new IfFunction();
-                else
-                    FlushBuffer();
-                if (function)
-                {
-                    parser.Parse(TokenValue(Token::FUNCTION, function));
-                    free(tokenBuffer);
-                    tokenBuffer = nullptr;
-                }
+                parser.Parse(TokenValue(*pendingFunctionToken, 0));
+                delete pendingFunctionToken;
+                pendingFunctionToken = nullptr;
             }
             parser.Parse(TokenValue(Token::PARENTHESSIS_START));
             return true;
         }
     }
-    // we only care about numbers and alphabet at this point so we skip rest
-    if (!(c >= '0' && c <= '9') && !(c >= 'a' && c <= 'z') &&
-        !(c >= 'A' && c <= 'Z'))
-        return true;
-    // add character to buffer
-    if (!tokenBuffer)
-    {
-        tokenBufferSize = 0;
-        tokenBuffer = (char*)malloc(14);
-    }
-    if (c == 'N' && tokenBufferSize == 0)
-    {
-        parser.Parse(TokenValue(Token::NEGATE));
-        // we only discard the buffer here, because it's not passed to tokens!
-        if (tokenBuffer)
-            free(tokenBuffer);
-        tokenBuffer = nullptr;
-    }
-    else
-    {
-        tokenBuffer[tokenBufferSize++] = c;
-        tokenBuffer[tokenBufferSize] = '\0';
-    }
+    if (str[0] < '0' || str[0] > '9') return true;
+    parser.Parse(TokenValue(VALUE, atoi(str)));
+
     return true;
 }
 

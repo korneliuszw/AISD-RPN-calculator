@@ -1,4 +1,4 @@
-//
+
 // Created by wired-mac on 09/03/2024.
 //
 
@@ -6,7 +6,9 @@
 #define KALKULATOR_TOKENS_HPP
 
 #include "functions.hpp"
-enum Token {
+
+enum Token
+{
     PARENTHESSIS_START,
     PARENTHESSIS_END,
     NEGATE,
@@ -14,30 +16,37 @@ enum Token {
     DIVIDE,
     ADD,
     SUBSTRACT,
-    FUNCTION,
     ARGUMENT_SEP,
-    VALUE
+    VALUE,
+    MIN,
+    MAX,
+    IF
 };
-char stringifyToken(const Token &token);
-int getTokenPriority(const Token &token);
 
-struct TokenValue {
+inline bool isFunction(const Token& token)
+{
+    return token == IF || token == MAX || token == MIN;
+}
+
+Function* getTokenClass(const Token& token);
+
+
+char stringifyToken(const Token& token);
+int getTokenPriority(const Token& token);
+
+struct TokenValue
+{
     Token token;
-    union {
-        Function *function = nullptr;
-        int numericValue;
+    // Value if token == VALUE or number of arguments
+    int numericValue;
+
+    explicit TokenValue(Token token) : token(token)
+    {
     };
 
-    ~TokenValue();
-
-    explicit TokenValue(Token token) : token(token) {};
-
-    explicit TokenValue(Token token, Function* function) : token(token), function(function) {};
-    explicit TokenValue(Token token, int value) : token(token), numericValue(value) {};
-
-    TokenValue(const TokenValue &t);
-
-    TokenValue &operator=(const TokenValue &r) { return *this; }
+    explicit TokenValue(Token token, int value) : token(token), numericValue(value)
+    {
+    };
 };
 
 #endif //KALKULATOR_TOKENS_HPP

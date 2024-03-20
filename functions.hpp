@@ -11,65 +11,45 @@
 
 class Function
 {
-protected:
-    int argumentCount = 0;
-
 public:
-    virtual int Calculate(Stack<int>&) = 0;
+    virtual int Calculate(Stack<int>&, int) = 0;
 
-    void SetArgumentCount(int count)
-    {
-        argumentCount = count;
-    }
-
-    int GetArgumentCount() const
-    {
-        return argumentCount;
-    }
 
     virtual const char* Name() = 0;
 
-    virtual Function* Clone() const = 0;
-
-    virtual void Print()
+    virtual void Print(int arguments)
     {
-        printf("%s%d", this->Name(), this->argumentCount);
+        printf("%s%d", this->Name(), arguments);
     }
 };
 
 class MaxFunction : public Function
 {
 public:
-    int Calculate(Stack<int>& values) override;
+    int Calculate(Stack<int>& values, int arguments) override;
 
     const char* Name() override { return "MAX"; }
-
-    Function* Clone() const override;
 };
 
 class MinFunction : public Function
 {
 public:
-    int Calculate(Stack<int>& values) override;
+    int Calculate(Stack<int>& values, int arguments) override;
 
     const char* Name() override { return "MIN"; }
-
-    Function* Clone() const override;
 };
 
 class IfFunction : public Function
 {
 public:
-    int Calculate(Stack<int>& values) override;
+    int Calculate(Stack<int>& values, int arguments) override;
 
     const char* Name() override { return "IF"; }
 
-    void Print() override
+    void Print(int arguments) override
     {
         printf("%s", this->Name());
     }
-
-    Function* Clone() const override;
 };
 
 
